@@ -10,6 +10,7 @@ packages = [{include = "open_voice_pilot"}]
 python = "^3.10"
 pyaudio = "*"
 pydub = "*"
+matplotlib = "*"
 
 [build-system]
 requires = ["poetry-core"]
