@@ -4,10 +4,12 @@ version = "0.1.0"
 description = ""
 authors = ["Bailey Chittle <bachittle@gmail.com>"]
 readme = "README.md"
+packages = [{include = "open_voice_pilot"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-
+pyaudio = "*"
+pydub = "*"
 
 [build-system]
 requires = ["poetry-core"]

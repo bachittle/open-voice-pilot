@@ -9,19 +9,37 @@ class AudioProcessor(ABC):
     def read_chunk(self):
         pass
 
-    # Additional common methods can be defined here
+    @abstractmethod
+    def close(self):
+        pass
 
 # File Audio Processor
-class FileAudioProcessor(AudioProcessor):
+from pydub import AudioSegment
+from pydub.utils import make_chunks
+
+class FileAudioProcessor:
     def __init__(self, filepath, chunk_size=1024):
-        self.filepath = filepath
-        self.chunk_size = chunk_size
-        self.audio_file = AudioSegment.from_file(filepath)
+        # pydub calculates in milliseconds
+        self.chunk_size_ms = chunk_size * 1000 // 44100 
+        self.audio = AudioSegment.from_file(filepath)
+        self.chunks = make_chunks(self.audio, self.chunk_size_ms)
+        self.current_chunk = 0
 
     def read_chunk(self):
-        # Implementation to read a chunk of data from the audio file
-        # This is a simplified example. In practice, handle format and pointer position.
-        return self.audio_file[:self.chunk_size].raw_data
+        if self.current_chunk < len(self.chunks):
+            chunk_data = self.chunks[self.current_chunk].raw_data
+            self.current_chunk += 1
+            return chunk_data
+        else:
+            return None
+    
+    def close(self):
+        """
+        No need to close the file as pydub handles it internally
+        """
+        pass
+
+
 
 # Microphone Audio Processor
 class MicrophoneAudioProcessor(AudioProcessor):
@@ -42,12 +60,14 @@ class MicrophoneAudioProcessor(AudioProcessor):
         self.stream.close()
         self.audio.terminate()
 
-# Example usage:
-# file_processor = FileAudioProcessor("path/to/audiofile.mp3")
-# mic_processor = MicrophoneAudioProcessor()
 
-# Read a chunk from file
-# file_chunk = file_processor.read_chunk()
+# Example usage
+# file_processor = FileAudioProcessor("path/to/your/audiofile.mp3")
 
-# Read a chunk from microphone
-# mic_chunk = mic_processor.read_chunk()
+# while True:
+#     chunk = file_processor.read_chunk()
+#     if chunk is None:
+#         break
+    # Process the chunk
+
+# No need to close the file as pydub handles it internally
