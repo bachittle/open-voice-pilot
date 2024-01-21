@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-import wave
 import pyaudio
-from pydub import AudioSegment
+import numpy as np
+import ffmpeg
 
 # Abstract Class
 class AudioProcessor(ABC):
@@ -13,32 +13,35 @@ class AudioProcessor(ABC):
     def close(self):
         pass
 
-# File Audio Processor
-from pydub import AudioSegment
-from pydub.utils import make_chunks
-
-class FileAudioProcessor:
+class FileAudioProcessor(AudioProcessor):
     def __init__(self, filepath, chunk_size=1024):
-        # pydub calculates in milliseconds
-        self.chunk_size_ms = chunk_size * 1000 // 44100 
-        self.audio = AudioSegment.from_file(filepath)
-        self.chunks = make_chunks(self.audio, self.chunk_size_ms)
-        self.current_chunk = 0
+        self.chunk_size = chunk_size
+        self.filepath = filepath
+        out, _ = (
+            ffmpeg.input(filepath)
+            .output("pipe:", format='wav')
+            .run(capture_stdout=True, capture_stderr=True)
+        )
+
+        self.audio = np.frombuffer(out, np.int16)
+        self.chunk_index = 0
 
     def read_chunk(self):
-        if self.current_chunk < len(self.chunks):
-            chunk_data = self.chunks[self.current_chunk].raw_data
-            self.current_chunk += 1
-            return chunk_data
-        else:
+        start = self.chunk_index * self.chunk_size
+        end = start + self.chunk_size
+
+        if start >= len(self.audio):
             return None
+        
+        if end > len(self.audio):
+            end = len(self.audio)
+
+        chunk = self.audio[start:end]
+        self.chunk_index += 1
+        return chunk
     
     def close(self):
-        """
-        No need to close the file as pydub handles it internally
-        """
         pass
-
 
 
 # Microphone Audio Processor
@@ -53,7 +56,9 @@ class MicrophoneAudioProcessor(AudioProcessor):
 
     def read_chunk(self):
         # Implementation to read a chunk of data from the microphone
-        return self.stream.read(self.chunk_size)
+        data = self.stream.read(self.chunk_size)
+        # Convert raw data to numpy array
+        return np.frombuffer(data, dtype=np.int16)
 
     def close(self):
         self.stream.stop_stream()

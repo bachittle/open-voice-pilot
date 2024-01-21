@@ -1,6 +1,9 @@
 import open_voice_pilot.audio_processing as ap 
 import time
 import argparse
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+import numpy as np
 
 def print_chunks(processor):
     i = 0
@@ -14,10 +17,60 @@ def print_chunks(processor):
         print(f"\rChunk {i}: {len(chunk)}, Elapsed time: {elapsed_time:.2f} s, average time per chunk: {avg_time_per_chunk:.2f} ms.  ", end="")
         i += 1
 
+audio_data_buffer = []
+
+def visualize_chunks(processor):
+    # Initialize plot
+    fig, ax = plt.subplots()
+    line, = ax.plot([], [], lw=2)
+
+
+    # Function to update the audio waveform
+    def update_waveform(frame, audio_data, sample_rate):
+        """Update the waveform for animation."""
+
+        global audio_data_buffer
+
+        # read chunk from audio processor
+        chunk = processor.read_chunk()
+        if not chunk.any():
+            return line,
+
+        # append chunk to audio data
+        audio_data_buffer = np.append(audio_data_buffer, chunk)
+        audio_data = audio_data_buffer
+
+        max_points = frame * sample_rate // 10  # Points to display per frame
+        if max_points > len(audio_data):
+            max_points = len(audio_data)
+        ax.set_xlim(0, max_points)
+        line.set_data(np.arange(max_points), audio_data[:max_points])
+        
+        # Force redraw of the entire figure
+        fig.canvas.draw()
+        
+        return line,
+
+    sample_rate = 44100
+
+    audio_data = []
+
+    # Setting initial limits for the x-axis and y-axis
+    ax.set_ylim(-2**15, 2**15 - 1)
+
+    # Creating the animation
+    anim = FuncAnimation(fig, update_waveform, fargs=(audio_data, sample_rate),
+                         frames=range(1, 1000), interval=0, blit=False)
+
+    plt.show()
+
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run audio processing experiments with Open Voice Pilot tools.")
     parser.add_argument('--mode', choices=['file', 'mic'], required=True, help="Select mode: 'file' for audio file processing, 'mic' for microphone input.")
     parser.add_argument('--file', help="Path to the audio file for 'file' mode.")
+    parser.add_argument('--output', choices=['print', 'visualize'], default='print', help="Select output: 'print' to print chunks, 'visualize' to visualize chunks.")
     
     args = parser.parse_args()
 
@@ -29,10 +82,12 @@ def main():
     elif args.mode == 'mic':
         processor = ap.MicrophoneAudioProcessor()
 
-    print_chunks(processor)
+    if args.output == 'print':
+        print_chunks(processor)
+    elif args.output == 'visualize':
+        visualize_chunks(processor)
 
 if __name__ == "__main__":
     main()
-
 
 

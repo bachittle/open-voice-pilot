@@ -9,7 +9,7 @@ packages = [{include = "open_voice_pilot"}]
 [tool.poetry.dependencies]
 python = "^3.10"
 pyaudio = "*"
-pydub = "*"
+ffmpeg-python = "*"
 matplotlib = "*"
 
 [build-system]
