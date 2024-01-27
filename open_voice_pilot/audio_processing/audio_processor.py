@@ -44,20 +44,34 @@ class FileAudioProcessor(AudioProcessor):
         pass
 
 
+def list_microphones():
+    pyaudio_instance = pyaudio.PyAudio()
+    info = pyaudio_instance.get_host_api_info_by_index(0)
+    num_devices = info.get('deviceCount')
+
+    for i in range(0, num_devices):
+        if pyaudio_instance.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels') > 0:
+            print(f"Microphone index {i}: {pyaudio_instance.get_device_info_by_host_api_device_index(0, i).get('name')}")
+    
+    pyaudio_instance.terminate()
+
+def select_microphone():
+    list_microphones()
+    index = int(input("Select microphone index: "))
+    return index
+
 # Microphone Audio Processor
 class MicrophoneAudioProcessor(AudioProcessor):
-    def __init__(self, chunk_size=1024, format=pyaudio.paInt16, channels=1, rate=44100):
+    def __init__(self, device_index=None, chunk_size=1024, format=pyaudio.paInt16, channels=1, rate=44100):
         self.chunk_size = chunk_size
         self.format = format
         self.channels = channels
         self.rate = rate
         self.audio = pyaudio.PyAudio()
-        self.stream = self.audio.open(format=self.format, channels=self.channels, rate=self.rate, input=True, frames_per_buffer=self.chunk_size)
+        self.stream = self.audio.open(format=self.format, channels=self.channels, rate=self.rate, input=True, input_device_index=device_index, frames_per_buffer=self.chunk_size)
 
     def read_chunk(self):
-        # Implementation to read a chunk of data from the microphone
-        data = self.stream.read(self.chunk_size)
-        # Convert raw data to numpy array
+        data = self.stream.read(self.chunk_size, exception_on_overflow=False)
         return np.frombuffer(data, dtype=np.int16)
 
     def close(self):

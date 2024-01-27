@@ -1,3 +1,8 @@
+"""
+Messing around with thread communication.
+Doesn't really have anything to do with the rest of the project.
+"""
+
 import threading
 import time
 from queue import Queue

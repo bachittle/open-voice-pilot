@@ -1,3 +1,8 @@
+"""
+Test the "growth" of a plot by continuously adding data to it.
+Needs to do some fun things like continuously force matplotlib to redraw the entire figure.
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation

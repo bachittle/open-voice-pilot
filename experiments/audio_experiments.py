@@ -24,47 +24,27 @@ def visualize_chunks(processor):
     fig, ax = plt.subplots()
     line, = ax.plot([], [], lw=2)
 
-
-    # Function to update the audio waveform
     def update_waveform(frame, audio_data, sample_rate):
-        """Update the waveform for animation."""
-
         global audio_data_buffer
-
-        # read chunk from audio processor
         chunk = processor.read_chunk()
         if not chunk.any():
             return line,
-
-        # append chunk to audio data
         audio_data_buffer = np.append(audio_data_buffer, chunk)
         audio_data = audio_data_buffer
-
-        max_points = frame * sample_rate // 10  # Points to display per frame
+        max_points = frame * sample_rate // 10
         if max_points > len(audio_data):
             max_points = len(audio_data)
         ax.set_xlim(0, max_points)
         line.set_data(np.arange(max_points), audio_data[:max_points])
-        
-        # Force redraw of the entire figure
         fig.canvas.draw()
-        
         return line,
 
     sample_rate = 44100
-
     audio_data = []
-
-    # Setting initial limits for the x-axis and y-axis
     ax.set_ylim(-2**15, 2**15 - 1)
-
-    # Creating the animation
     anim = FuncAnimation(fig, update_waveform, fargs=(audio_data, sample_rate),
                          frames=range(1, 1000), interval=0, blit=False)
-
     plt.show()
-
-
 
 def main():
     parser = argparse.ArgumentParser(description="Run audio processing experiments with Open Voice Pilot tools.")
@@ -80,14 +60,16 @@ def main():
             return
         processor = ap.FileAudioProcessor(args.file)
     elif args.mode == 'mic':
-        processor = ap.MicrophoneAudioProcessor()
+        mic_index = ap.select_microphone()  # Select microphone interactively
+        processor = ap.MicrophoneAudioProcessor(device_index=mic_index)  # Initialize processor with selected microphone
 
     if args.output == 'print':
         print_chunks(processor)
     elif args.output == 'visualize':
         visualize_chunks(processor)
 
+    processor.close()
+
 if __name__ == "__main__":
     main()
-
 
